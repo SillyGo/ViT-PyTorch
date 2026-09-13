@@ -4,7 +4,10 @@ from pathlib import Path
 import numpy as np
 import sys
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DATA_ROOT = PROJECT_ROOT / "data"
+
+sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.vit_pytorch.models.simple_ViT import VisionTransformer
 
@@ -34,7 +37,7 @@ test_transform = transforms.Compose([
 ])
 
 og_set = CIFAR100(
-    root='./data', train=True, download=True, transform=train_transform
+    root=DATA_ROOT, train=True, download=True, transform=train_transform
 )
 
 train_size = int(0.8 * len(og_set))
@@ -45,7 +48,7 @@ generator = Generator().manual_seed(42)
 train_set, validation_set = random_split(og_set,[train_size, val_size],generator=generator)
 
 test_set = CIFAR100(
-    root='./data', train=False, download=True, transform=test_transform
+    root=DATA_ROOT, train=False, download=True, transform=test_transform
 )
 
 # 3. dataloaders, etc

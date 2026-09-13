@@ -178,6 +178,6 @@ class VisionTransformer(nn.Module):
         x = self.norm(x)
 
         cls_token_logit = x[:,0]
-        x = self.head(cls_token_logit)
+        x = self.head(cls_token_logit)  # logits !!!!
 
         return x

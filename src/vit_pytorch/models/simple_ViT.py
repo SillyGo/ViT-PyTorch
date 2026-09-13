@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-class PathEmbed(nn.Module):
+class PatchEmbed(nn.Module):
     def __init__(self, img_size, patch_size, canais=3, embed_dim=768):
         super().__init__()
         self.img_size = img_size
@@ -11,15 +11,15 @@ class PathEmbed(nn.Module):
         self.proj = nn.Conv2d(  # quebra a imagem original em patches
             canais, 
             embed_dim,
-            kernel_size=patch_size, # faz com que os patches não sofram modificações
-            stride=patch_size
+            kernel_size=patch_size, # olha pro patch inteiro
+            stride=patch_size       # evita sobreposição
         )
 
     def forward(self, x):
         # formato de x: (batch_size, channels, img_size_h, img_size_w)
 
         x = self.proj(x)    # (batch_size, embed_dim, n_patches**0.5, ...)
-        x = x.flatten(x)
+        x = x.flatten(2)
         x = x.transpose(1,2)
 
         return x 
@@ -55,7 +55,7 @@ class Attention(nn.Module):
 
         kt = k.transpose(-2,-1) # fazemos o swap das duas últimas dimensões de k, ou seja, o número de patches / tokens e a dimensão de cada token
 
-        dp = (q @ kt) * self.scale
+        dp = (q @ kt) * self.QK_scale
 
         attn = dp.softmax(dim=-1) # o cos sim score está na row -1, conforme definido no nosso swap / transpoe
         attn = self.attn_dropout_p(attn)
@@ -64,7 +64,7 @@ class Attention(nn.Module):
         final = final.transpose(1,2)   # esses transpose são chatos. Eles geralmente são porque queremos deixar algo em um formato bonitinho.
         final = final.flatten(2)       # junta as previsões das heads
 
-        x = self.proj(x)               # combina (de verdade) a previsão das heads.
+        x = self.proj(final)               # combina (de verdade) a previsão das heads.
         x = self.proj_dropout_p(x)
 
         return x
@@ -90,7 +90,7 @@ class MLP(nn.Module):
 
         return x
 class TransformerBlock(nn.Module):
-    def __init__(self, dim, n_heads, mlp_ratio=4.0, qkv_bias=True,
+    def __init__(self, dim, n_heads, mlp_ratio=3.0, qkv_bias=True,
                 p=0., attn_p=0.):
         super().__init__()
 
@@ -105,7 +105,7 @@ class TransformerBlock(nn.Module):
 
         self.norm2 = nn.LayerNorm(dim, 1e-6)
 
-        mlp_hidden_size = int(3 * dim) # caso essa multiplicação n dê um int, force um
+        mlp_hidden_size = int(mlp_ratio * dim) # caso essa multiplicação n dê um int, force um
 
         self.mlp = MLP(
             dim,
@@ -115,7 +115,7 @@ class TransformerBlock(nn.Module):
         )
 
     def forward(self, x):
-        x = x + self.attn(self.nomr1(x))    # esse '+x' é devido às conexões residuais no paper.
+        x = x + self.attn(self.norm1(x))    # esse '+x' é devido às conexões residuais no paper.
         x = x + self.mlp(self.norm2(x))
 
         return x
@@ -125,7 +125,7 @@ class VisionTransformer(nn.Module):
                  n_heads, mlp_ratio, qkv_bias, p, attn_p):
         super().__init__()
 
-        self.patch_embed = PathEmbed(
+        self.patch_embed = PatchEmbed(
             img_size,
             patch_size,
             canais,
@@ -134,7 +134,7 @@ class VisionTransformer(nn.Module):
 
         self.cls_token = nn.Parameter(torch.zeros(1,1,dim)) # inicializamos o class token com zeros
         self.pos_embed = nn.Parameter(                      # embeddings the posição. Temos um para cada patch. Esse embedding, obviamente, tem dimensão 'dim'.
-            torch.zeros(1,1,self.patch_embed.n_patches, dim) 
+            torch.zeros(1,self.patch_embed.n_patches + 1, dim) 
         )
 
         self.pos_drop = nn.Dropout(p=p)

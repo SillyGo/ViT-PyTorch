@@ -1,6 +1,7 @@
 # 1. importando o modelo
 
 from pathlib import Path
+import numpy as np
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -124,6 +125,10 @@ scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
 # 7. loop de treinamneto
 
 epocas = 100
+patience = 5
+lowest_val_loss = np.inf
+
+patience_ticks = 0
 
 for ep in range(epocas):
     model.train() # queremos treinar nosso modelo
@@ -193,8 +198,20 @@ for ep in range(epocas):
 
     validation_accuracy = validation_correct / validation_total
 
+    val_loss_avg = validation_loss / len(validation_loader)
+
+    if val_loss_avg < lowest_val_loss:
+        lowest_val_loss = val_loss_avg
+        patience_ticks = 0
+    else:
+        patience_ticks += 1
+
+    if patience_ticks == patience:
+        print(f"paciência esgotou. Terminando o programa")
+        exit()
+
     print(
-        f"loss de validação: {(validation_loss / len(validation_loader)):.4f} "
+        f"loss de validação: {val_loss_avg:.4f} "
         f"acurácia de validação: {validation_accuracy:.4f} "
     )
 

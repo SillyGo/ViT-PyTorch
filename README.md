@@ -24,9 +24,23 @@ src/vit_pytorch/utils/      Shared utilities as they are introduced
 tests/                      Sanity checks and model tests
 ```
 
+## Installation
+
+Install the runtime dependencies with:
+
+```bash
+python3 -m pip install -r requirements.txt
+```
+
+For an editable local package installation, use:
+
+```bash
+python3 -m pip install -e .
+```
+
 ## Running the Current Example
 
-Install the required PyTorch and torchvision dependencies, then run:
+After installing the dependencies, run:
 
 ```bash
 python3 scripts/train_ciphar100.py

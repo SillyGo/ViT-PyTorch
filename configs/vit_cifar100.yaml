@@ -1,0 +1,45 @@
+dataset:
+  name: CIFAR100
+  root: ./data
+  num_classes: 100
+  validation_split: 0.2
+  split_seed: 42
+  normalization:
+    mean: [0.5071, 0.4867, 0.4408]
+    std: [0.2675, 0.2565, 0.2761]
+  train_augmentation:
+    random_crop:
+      size: 32
+      padding: 4
+    random_horizontal_flip: true
+
+model:
+  name: VisionTransformer
+  img_size: 32
+  patch_size: 4
+  channels: 3
+  num_classes: 100
+  dim: 192
+  depth: 6
+  num_heads: 3
+  mlp_ratio: 3.0
+  qkv_bias: true
+  dropout: 0.1
+  attention_dropout: 0.1
+
+training:
+  batch_size: 128
+  num_workers: 4
+  pin_memory: true
+  epochs: 100
+  early_stopping_patience: 5
+  gradient_clip_norm: 1.0
+  loss: cross_entropy
+  optimizer: AdamW
+  learning_rate: 0.0003
+  weight_decay: 0.05
+  scheduler: CosineAnnealingLR
+  scheduler_t_max: 100
+
+runtime:
+  device: auto
